@@ -19,13 +19,19 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
     public static class InstructionCommand implements Command {
         private final long serialVersionUID = 1L;
         private String message;
+        private ActorRef<SortedSet<BigInteger>> sender;
 
-        public InstructionCommand(String message) {
+        public InstructionCommand(String message, ActorRef<SortedSet<BigInteger>> sender) {
             this.message = message;
+            this.sender = sender;
         }
 
         public String getMessage() {
             return message;
+        }
+
+        public ActorRef<SortedSet<BigInteger>> getSender() {
+            return sender;
         }
     }
     public static class ResultCommand implements Command {
@@ -61,12 +67,14 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
     }
 
     private SortedSet<BigInteger> primes = new TreeSet<>();
+    private ActorRef<SortedSet<BigInteger>> sender;
 
     @Override
     public Receive<Command> createReceive() {
         return newReceiveBuilder()
                 .onMessage(InstructionCommand.class, cmd -> {
                     if ( "start".equals(cmd.message) ) {
+                        sender = cmd.sender;
                         for ( int i = 0; i < 20; i++ ) {
                             ActorRef<WorkerBehavior.Command> ref = getContext().spawn(WorkerBehavior.create(), String.format("worker-%02d", i));
                             askWorkerForPrime(ref);
@@ -79,7 +87,9 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
                     System.out.println("Got " + primes.size() + " primes");
                     if ( primes.size() == 20 ) {
                         primes.forEach(System.out::println);
-                        return Behaviors.stopped();
+                        // send back result
+                        sender.tell(primes);
+//                        return Behaviors.stopped();
                     }
                     return Behaviors.same();
                 })
