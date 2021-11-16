@@ -2,6 +2,7 @@ package com.example.blockchain.actors;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.Terminated;
 import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
@@ -87,6 +88,10 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
                 .onMessage(HashResultCommand.class, cmd -> {
                     return Behaviors.same();
                 })
+                .onSignal(Terminated.class, handler -> {
+                    startNextWorker();
+                    return Behaviors.same();
+                })
                 .build();
     }
 
@@ -96,10 +101,13 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
     private int currentNonce = 0 ;
 
     private void startNextWorker() {
+        System.out.println("Starting worker with nonce " + currentNonce * 1000);
         ActorRef<WorkerBehavior.Command> worker = getContext().spawn(
                 WorkerBehavior.create(),
                 "worker" + currentNonce
         );
-        worker.tell(new WorkerBehavior.Command(block, currentNonce++, difficultyLevel, getContext().getSelf()));
+        getContext().watch(worker);
+        worker.tell(new WorkerBehavior.Command(block, currentNonce * 1000, difficultyLevel, getContext().getSelf()));
+        currentNonce++;
     }
 }

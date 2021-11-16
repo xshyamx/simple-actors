@@ -9,6 +9,8 @@ import akka.actor.typed.javadsl.Behaviors;
 import com.example.blockchain.model.Block;
 import com.example.blockchain.model.HashResult;
 
+import java.util.Random;
+
 import static com.example.blockchain.utils.BlockChainUtils.calculateHash;
 
 public class WorkerBehavior extends AbstractBehavior<WorkerBehavior.Command> {
@@ -76,7 +78,11 @@ public class WorkerBehavior extends AbstractBehavior<WorkerBehavior.Command> {
 					}
 					else {
 						getContext().getLog().debug("null");
-						return Behaviors.same();
+						Random r = new Random();
+						if ( r.nextInt(10) < 3 ) {
+							throw new ArithmeticException("block not found");
+						}
+						return Behaviors.stopped();
 					}
 				})
 				.build();
