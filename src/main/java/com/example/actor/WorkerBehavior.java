@@ -12,6 +12,7 @@ import java.math.BigInteger;
 import java.util.Random;
 
 public class WorkerBehavior extends AbstractBehavior<WorkerBehavior.Command> {
+    public static final int THRESHOLD = 3;
     private WorkerBehavior(ActorContext<Command> context) {
         super(context);
     }
@@ -25,8 +26,11 @@ public class WorkerBehavior extends AbstractBehavior<WorkerBehavior.Command> {
     public Receive<Command> initial() {
         return newReceiveBuilder()
                 .onAnyMessage(cmd -> {
-                    BigInteger prime = new BigInteger(2000, new Random()).nextProbablePrime();
-                    cmd.sender.tell(new ManagerBehavior.ResultCommand(prime));
+                    final Random r = new Random();
+                    BigInteger prime = new BigInteger(2000, r).nextProbablePrime();
+                    if ( r.nextInt(5) < THRESHOLD ) {
+                        cmd.sender.tell(new ManagerBehavior.ResultCommand(prime));
+                    }
                     return cached(prime);
                 })
                 .build();
@@ -35,7 +39,10 @@ public class WorkerBehavior extends AbstractBehavior<WorkerBehavior.Command> {
     private Receive<Command> cached(BigInteger prime) {
         return newReceiveBuilder()
                 .onAnyMessage(cmd -> {
-                    cmd.sender.tell(new ManagerBehavior.ResultCommand(prime));
+                    final Random r = new Random();
+                    if ( r.nextInt(5) < THRESHOLD ) {
+                        cmd.sender.tell(new ManagerBehavior.ResultCommand(prime));
+                    }
                     return Behaviors.same();
                 })
                 .build();
