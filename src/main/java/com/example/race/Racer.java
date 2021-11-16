@@ -2,6 +2,7 @@ package com.example.race;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.PostStop;
 import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
@@ -90,7 +91,19 @@ public class Racer extends AbstractBehavior<Racer.Command> {
         return newReceiveBuilder()
                 .onMessage(PositionCommand.class, cmd -> {
                     cmd.getController().tell(RaceController.raceUpdate(getContext().getSelf(), raceLength));
-                    return Behaviors.ignore();
+                    return waitingToStop();
+//                    return Behaviors.ignore();
+                })
+                .build();
+    }
+
+    private Receive<Command> waitingToStop() {
+        return newReceiveBuilder()
+                .onAnyMessage(cmd -> Behaviors.same())
+                .onSignal(PostStop.class, signal -> {
+                    getContext().getLog().info("Closing actor " + getContext().getSelf().path().name());
+//                    System.out.println("Closing actor " + getContext().getSelf().path().name());
+                    return Behaviors.same();
                 })
                 .build();
     }

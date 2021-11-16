@@ -124,7 +124,7 @@ public class RaceController extends AbstractBehavior<RaceController.Command> {
                 .onMessage(RaceCompleteCommand.class, cmd -> {
                     showResults();
                     System.out.printf("Race ended in %.2f seconds\n", (float) (System.currentTimeMillis() - start) / 1000);
-                    currentPosition.keySet().forEach(getContext()::stop);
+//                    currentPosition.keySet().forEach(getContext()::stop);
                     return Behaviors.withTimers(timers -> {
                         timers.cancelAll();
                         return Behaviors.stopped();
