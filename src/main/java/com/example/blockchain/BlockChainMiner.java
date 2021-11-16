@@ -6,6 +6,7 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.javadsl.AskPattern;
 import com.example.blockchain.actors.ManagerBehavior;
+import com.example.blockchain.actors.MiningSystemBehavior;
 import com.example.blockchain.model.Block;
 import com.example.blockchain.model.BlockChain;
 import com.example.blockchain.model.BlockValidationException;
@@ -75,7 +76,7 @@ public class BlockChainMiner {
 	}
 	public void mineBlocks() {
 		
-		actorSystem = ActorSystem.create(ManagerBehavior.create(), "BlockChainMiner");
+		actorSystem = ActorSystem.create(MiningSystemBehavior.create(), "BlockChainMiner");
 		mineNextBlock();
 		mineIndependentBlock();
 	}
