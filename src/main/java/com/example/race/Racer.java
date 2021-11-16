@@ -90,7 +90,7 @@ public class Racer extends AbstractBehavior<Racer.Command> {
         return newReceiveBuilder()
                 .onMessage(PositionCommand.class, cmd -> {
                     cmd.getController().tell(RaceController.raceUpdate(getContext().getSelf(), raceLength));
-                    return Behaviors.same();
+                    return Behaviors.ignore();
                 })
                 .build();
     }
