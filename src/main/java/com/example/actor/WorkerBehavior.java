@@ -20,17 +20,27 @@ public class WorkerBehavior extends AbstractBehavior<WorkerBehavior.Command> {
     }
     @Override
     public Receive<Command> createReceive() {
+        return initial();
+    }
+    public Receive<Command> initial() {
         return newReceiveBuilder()
                 .onAnyMessage(cmd -> {
-                    if ( "start".equals(cmd.message) ) {
-                        BigInteger i = new BigInteger(2000, new Random());
-                        cmd.sender.tell(new ManagerBehavior.ResultCommand(i.nextProbablePrime()));
-//                        System.out.println(i.nextProbablePrime());
-                    }
-                    return this;
+                    BigInteger prime = new BigInteger(2000, new Random()).nextProbablePrime();
+                    cmd.sender.tell(new ManagerBehavior.ResultCommand(prime));
+                    return cached(prime);
                 })
                 .build();
     }
+
+    private Receive<Command> cached(BigInteger prime) {
+        return newReceiveBuilder()
+                .onAnyMessage(cmd -> {
+                    cmd.sender.tell(new ManagerBehavior.ResultCommand(prime));
+                    return Behaviors.same();
+                })
+                .build();
+    }
+
     public static class Command implements Serializable {
         private String message;
         private ActorRef<ManagerBehavior.Command> sender;

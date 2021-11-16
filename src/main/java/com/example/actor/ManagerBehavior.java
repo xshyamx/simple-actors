@@ -30,17 +30,19 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
                         for ( int i = 0; i < 20; i++ ) {
                             ActorRef<WorkerBehavior.Command> ref = getContext().spawn(WorkerBehavior.create(), String.format("worker-%02d", i));
                             ref.tell(new WorkerBehavior.Command("start", getContext().getSelf()));
+                            ref.tell(new WorkerBehavior.Command("start", getContext().getSelf()));
                         }
                     }
-                    return this;
+                    return Behaviors.same();
                 })
                 .onMessage(ResultCommand.class, cmd -> {
                     primes.add(cmd.prime);
                     System.out.println("Got " + primes.size() + " primes");
                     if ( primes.size() == 20 ) {
+                        getContext().getSystem().terminate();
                         primes.forEach(System.out::println);
                     }
-                    return this;
+                    return Behaviors.same();
                 })
                 .build();
     }
