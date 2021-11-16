@@ -2,6 +2,7 @@ package com.example.blockchain.actors;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.Terminated;
 import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
@@ -80,12 +81,16 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
                     block = cmd.getBlock();
                     sender = cmd.getSender();
                     difficultyLevel = cmd.getDifficultyLevel();
+                    curentlyMining = true;
                     for( int i = 0; i < 10; i++ ) {
                         startNextWorker();
                     }
                     return Behaviors.same();
                 })
                 .onMessage(HashResultCommand.class, cmd -> {
+                    curentlyMining = false;
+                    getContext().getChildren().forEach(getContext()::stop);
+                    sender.tell(cmd.getResult());
                     return Behaviors.same();
                 })
                 .onSignal(Terminated.class, handler -> {
@@ -99,15 +104,22 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
     private Block block;
     private int difficultyLevel;
     private int currentNonce = 0 ;
+    private boolean curentlyMining;
 
     private void startNextWorker() {
-        System.out.println("Starting worker with nonce " + currentNonce * 1000);
-        ActorRef<WorkerBehavior.Command> worker = getContext().spawn(
-                WorkerBehavior.create(),
-                "worker" + currentNonce
-        );
-        getContext().watch(worker);
-        worker.tell(new WorkerBehavior.Command(block, currentNonce * 1000, difficultyLevel, getContext().getSelf()));
-        currentNonce++;
+        if ( curentlyMining ) {
+//            System.out.println("Starting worker with nonce " + currentNonce * 1000);
+            Behavior<WorkerBehavior.Command> workerBehavior =
+                    Behaviors.supervise(WorkerBehavior.create())
+                            .onFailure(SupervisorStrategy.resume());
+
+            ActorRef<WorkerBehavior.Command> worker = getContext().spawn(
+                    workerBehavior,
+                    "worker" + currentNonce
+            );
+            getContext().watch(worker);
+            worker.tell(new WorkerBehavior.Command(block, currentNonce * 1000, difficultyLevel, getContext().getSelf()));
+            currentNonce++;
+        }
     }
 }
