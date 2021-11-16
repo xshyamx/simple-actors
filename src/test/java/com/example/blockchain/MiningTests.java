@@ -3,6 +3,7 @@ package com.example.blockchain;
 import akka.actor.testkit.typed.javadsl.BehaviorTestKit;
 import akka.actor.testkit.typed.javadsl.TestInbox;
 import akka.actor.typed.Behavior;
+import com.example.blockchain.actors.ManagerBehavior;
 import com.example.blockchain.actors.WorkerBehavior;
 import com.example.blockchain.model.Block;
 import com.example.blockchain.model.HashResult;
@@ -15,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class MiningTests {
     BehaviorTestKit<WorkerBehavior.Command> actor;
-    TestInbox<HashResult> inbox;
+    TestInbox<ManagerBehavior.Command> inbox;
     Block block;
     @BeforeEach
     public void beforeEach() {
@@ -49,7 +50,8 @@ public class MiningTests {
         actor.run(getCommand(4385400, 5));
         HashResult expected = new HashResult();
         expected.foundAHash("000005063c2755396873ec402b09e910c46791dd06acb720cb6ca392ed6e613f", 4385438);
-        inbox.expectMessage(expected);
+
+        inbox.expectMessage(new ManagerBehavior.HashResultCommand(expected));
     }
 
     @Test
