@@ -4,10 +4,7 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.Terminated;
-import akka.actor.typed.javadsl.AbstractBehavior;
-import akka.actor.typed.javadsl.ActorContext;
-import akka.actor.typed.javadsl.Behaviors;
-import akka.actor.typed.javadsl.Receive;
+import akka.actor.typed.javadsl.*;
 import com.example.blockchain.model.Block;
 import com.example.blockchain.model.HashResult;
 
@@ -67,11 +64,17 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
             return Objects.hash(result);
         }
     }
-    private ManagerBehavior(ActorContext<Command> context) {
+    private StashBuffer<Command> stashBuffer;
+
+    private ManagerBehavior(ActorContext<Command> context, StashBuffer<Command> stashBuffer) {
         super(context);
+        this.stashBuffer = stashBuffer;
     }
+
     public static Behavior<Command> create() {
-        return Behaviors.setup(ManagerBehavior::new);
+        return Behaviors.withStash(5, stash -> {
+            return Behaviors.setup(ctx -> new ManagerBehavior(ctx, stash));
+        });
     }
 
     @Override
@@ -95,6 +98,41 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
                 })
                 .onSignal(Terminated.class, handler -> {
                     startNextWorker();
+                    return Behaviors.same();
+                })
+                .build();
+    }
+
+    private Receive<Command> idleMessageHandler() {
+        return newReceiveBuilder()
+                .onMessage(MineBlockCommand.class, cmd -> {
+                    block = cmd.getBlock();
+                    sender = cmd.getSender();
+                    difficultyLevel = cmd.getDifficultyLevel();
+                    curentlyMining = true;
+                    for( int i = 0; i < 10; i++ ) {
+                        startNextWorker();
+                    }
+                    return Behaviors.same();
+                })
+                .onSignal(Terminated.class, handler -> Behaviors.same())
+                .build();
+    }
+
+    private Receive<Command> activeMessageHandler() {
+        return newReceiveBuilder()
+                .onMessage(HashResultCommand.class, cmd -> {
+                    curentlyMining = false;
+                    getContext().getChildren().forEach(getContext()::stop);
+                    sender.tell(cmd.getResult());
+                    return stashBuffer.unstashAll(idleMessageHandler());
+                })  
+                .onSignal(Terminated.class, handler -> {
+                    startNextWorker();
+                    return Behaviors.same();
+                })
+                .onMessage(MineBlockCommand.class, cmd -> {
+                    stashBuffer.stash(cmd);
                     return Behaviors.same();
                 })
                 .build();

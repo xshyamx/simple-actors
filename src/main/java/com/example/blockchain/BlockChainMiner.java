@@ -2,6 +2,7 @@ package com.example.blockchain;
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 
+import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.javadsl.AskPattern;
 import com.example.blockchain.actors.ManagerBehavior;
@@ -55,11 +56,28 @@ public class BlockChainMiner {
 			System.out.println("Time taken " + (end - start) + " ms.");
 		}
 	}
-	
+
+	public void mineIndependentBlock() {
+		Block block = BlocksData.getNextBlock(7, "12345");
+		CompletionStage<HashResult> result = AskPattern.ask(
+				actorSystem,
+				(ActorRef<HashResult> me) -> new ManagerBehavior.MineBlockCommand(block, me, 5),
+				Duration.ofSeconds(30),
+				actorSystem.scheduler()
+		);
+		result.whenComplete((reply, err) -> {
+			if ( reply == null ) {
+				System.out.println("No has found");
+			} else {
+				System.out.println("All is fine");
+			}
+		});
+	}
 	public void mineBlocks() {
 		
 		actorSystem = ActorSystem.create(ManagerBehavior.create(), "BlockChainMiner");
 		mineNextBlock();
+		mineIndependentBlock();
 	}
 	
 }
