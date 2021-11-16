@@ -24,7 +24,8 @@ public class WorkerBehavior extends AbstractBehavior<WorkerBehavior.Command> {
                 .onAnyMessage(cmd -> {
                     if ( "start".equals(cmd.message) ) {
                         BigInteger i = new BigInteger(2000, new Random());
-                        System.out.println(i.nextProbablePrime());
+                        cmd.sender.tell(new ManagerBehavior.ResultCommand(i.nextProbablePrime()));
+//                        System.out.println(i.nextProbablePrime());
                     }
                     return this;
                 })
@@ -32,10 +33,10 @@ public class WorkerBehavior extends AbstractBehavior<WorkerBehavior.Command> {
     }
     public static class Command implements Serializable {
         private String message;
-        private ActorRef<String> sender;
+        private ActorRef<ManagerBehavior.Command> sender;
         public static final long serialVersionUID = 1;
 
-        public Command(String message, ActorRef<String> sender) {
+        public Command(String message, ActorRef<ManagerBehavior.Command> sender) {
             this.message = message;
             this.sender = sender;
         }
@@ -44,7 +45,7 @@ public class WorkerBehavior extends AbstractBehavior<WorkerBehavior.Command> {
             return message;
         }
 
-        public ActorRef<String> getSender() {
+        public ActorRef<ManagerBehavior.Command> getSender() {
             return sender;
         }
     }
