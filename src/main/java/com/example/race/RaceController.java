@@ -108,6 +108,7 @@ public class RaceController extends AbstractBehavior<RaceController.Command> {
                     racers--;
                     System.out.println("Pending racers : " + racers);
                     if ( racers == 0 ) {
+                        displayRace();
                         System.out.println("Race ended in " + (System.currentTimeMillis() - start) + " ms");
                         getContext().getSystem().terminate();
                     }
@@ -123,7 +124,7 @@ public class RaceController extends AbstractBehavior<RaceController.Command> {
         System.out.println("Race running for " + (System.currentTimeMillis() - start) + " ms");
         int i = 0;
         for ( ActorRef<Racer.Command> actor : currentPosition.keySet() ) {
-            System.out.printf("%02d [%2d] : %s\n", ++i, currentPosition.get(actor), new String(new char[currentPosition.get(actor)]).replace('\0', '='));
+            System.out.printf("%02d [%3d] : %s\n", ++i, currentPosition.get(actor), new String(new char[currentPosition.get(actor)]).replace('\0', '='));
         }
     }
 }
